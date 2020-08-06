@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Comunicação - Secretaria / Agentes</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- /* Begin */ Modal que coleta o nome do usuario -->
+    <div id="modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLabel">Usuário</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <form id ="chat-username">
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text" id="basic-addon1">@</span>
+                        </div>
+                        <input type="text" name="username" class="form-control" placeholder="Digite seu nome de usuário" aria-describedby="basic-addon1">
+                    </div>
+                </div>
+                <div class="alert alert-danger alert-dismissible fade show" style="display: none;" role="alert" aria-hidden="true">
+                    <strong>Ops!</strong> Esse usuario ja existe na sala
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Fechar</button>
+                  <button id="save-username" type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+          </div>
+        </div>
+    </div>
+    <!-- /* End */ Modal que coleta o nome do usuario -->
+    <!-- /* Begin */ Container da aplicacao -->
+    <div class="container-fluid">
+        <!-- /* Begin */ Content wrapper -->
+        <div class="content-wrapper">
+            <!-- /* Begin */ Row -->
+            <div class="row gutters">
+                <!-- /* Begin */ Definicao do tamanho do espaco ocupado pela aplicacao -->
+                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+                    <!-- /* Begin */ Card -->
+                    <div class="card m-0">
+                        <!-- /* Begin */ Row -->
+                        <div class="row no-gutters">
+                            <!-- /* Begin */ Container listagem de usuarios -->
+                            <div class="col-xl-4 col-lg-4 col-md-4 col-sm-3 col-3">
+                                <div class="users-container">
+                                    <div class="chat-search-box">
+                                        <div class="input-group">
+                                            <input class="form-control" placeholder="Pesquisar">
+                                            <div class="input-group-btn">
+                                                <button type="button" class="btn btn-info">
+                                                    <i class="fa fa-search"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- /**/ Os usuarios sao listados aqui id="users" -->
+                                    <ul id="users" class="users"></ul>
+                                </div>
+                            </div>
+                            <!-- /* End */ Container listagem de usuarios -->
+                            <!-- /* Begin */ Parte de cima da interface -->
+                            <div class="col-xl-8 col-lg-8 col-md-8 col-sm-9 col-9">
+                                <div class="selected-user">
+                                    <span>Para: <span class="name">Todos</span></span>
+                                </div>
+                                <form id="chat" class="chat-container">
+                                    <ul id="chat-content" class="chat-box chatContainerScroll">
+                                    </ul>
+                                    <div class="form-group mt-3 mb-0">
+                                        <input type="text" name="message" class="form-control" placeholder="Digite sua mensagem" />
+                                    </div>
+                                    <div class="form-group mt-2 mb-0">
+                                        <input type="submit" class="btn btn-primary btn-lg btn-block" value="Enviar" />
+                                    </div>
+                                </form>
+                            </div>
+                            <!-- /* End */ Parte de cima da interface -->
+                        </div>
+                        <!-- /* End */ Row -->
+                    </div>
+                    <!-- /* End */ Card -->
+                </div>
+                <!-- /* End */ Row -->
+            </div>
+            <!-- /* End */ Row -->
+        </div>
+        <!-- /* End */ Content wrapper -->
+    </div>
+    <!-- /* End */ Container da aplicacao -->
+    <!-- /* Begin */ Scripts utilizados -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <script type="text/javascript">
+        // Conecta a pagina com o server.js
+        var socket = io('http://localhost:3000');
+        // Variavel auxiliar para receber o nome de usuário
+        var author = '';
+        let users = [];
+
+        // Funcao que renderiza as mensagens no corpo da pagina
+        function renderMessage(message){
+            // Referencia o container
+            $('#chat-content').append(
+                // Adiciona um elemento de mensagem ao container referenciado
+                '<li class="chat-left">' +
+                    '<div class="chat-avatar">' +
+                        '<img src="./img/user_icon.png" alt="Retail Admin">' +
+                        '<div class="chat-name">' + message.author + '</div>' +
+                    '</div>' +
+                    '<div class="chat-text">' + message.message + '</div>' +
+                    '<div class="chat-hour">' + message.time + '<span class="fa fa-check-circle"></span></div>' +
+                '</li>'
+            );
+        };
+
+        // Funcao que renderiza os usuários no corpo da pagina
+        function renderUser(user){
+            // Referencia o container
+            $('#users').append(
+                // Adiciona um elemento de usuario ao container referenciado
+                '<li class="person" data-chat="'+ user.author + '">' +
+                    '<div class="user">' +
+                        '<img src="./img/user_icon.png" alt="Retail Admin">' +
+                        '<span class="status online"></span>' +
+                    '</div>' +
+                    '<p class="name-time">' +
+                        '<span class="name"> ' + user.author + '</span>' +
+                        '<span class="time"> ' + user.date + '</span>' +
+                    '</p>' +
+                '</li>'
+            );
+        };
+
+        // Renderiza mensagens anteriores para usuarios que abriram a aplicacao recentemente
+        socket.on('previousMessages', function(messages){
+            for(message of messages){
+                renderMessage(message);
+            }
+        });
+
+        // (Precisa consertar kkkk)
+        // Renderiza usuarios anteriores para usuarios que abriram a aplicacao recentemente
+        socket.on('previousUsers', function(users){
+            for(user of users){
+                renderUser(user);
+            }
+        });
+
+        // Funcao que renderiza uma mensagem recem enviada pelos usuarios
+        socket.on('receivedMessage', function(message){
+            renderMessage(message);
+        });
+
+        // Funcao que renderiza um usuario recem chegado
+        socket.on('receivedUser', function(user){
+            renderUser(user);
+        });
+
+        socket.on('Teste', function(teste){
+            console.log(teste)
+        });
+
+        // Captura o nome de usuario digitado
+        $('#chat-username').submit(function(event){
+            event.preventDefault();
+
+            author = $('input[name=username]').val();
+            // Se o campo foi preenchido, um objeto é construido com o dado do author (username)
+            if (author.length) {
+                // Adiciona data ao usuario que entrou
+                var data = new Date();
+                var dateNow = data.getDay() + '/' + data.getMonth() + '/' + data.getFullYear();
+
+                var userObject = {
+                    author: author,
+                    date: dateNow
+                }
+            }
+            
+            // Se o usuario ja nao existir, ele é renderizado
+            if (users.indexOf(author) < 0) {
+                renderUser(userObject);
+                // Adiciona o usuario na lista de usuarios
+                users.push(author)
+                // Envia o nome de usuário para o servidor (server.js)
+                socket.emit('sendUsername', userObject);
+            } else {
+                $(".alert").style.display = "block";
+            }
+
+        });
+        // Captura a mensagem digitada pelo usuario
+        $('#chat').submit(function(event){
+            event.preventDefault();
+
+            var message = $('input[name=message]').val();
+            // Se nome de usuario e a mensagem estiverem preenchidos, um objeto mensagem é construido
+            if(author.length && message.length){
+                // Adiciona o horaio em que a mensagem foi enviada
+                var time = new Date();
+                var timeNow = time.getHours() + ':' + time.getMinutes();
+                // Construcao do objeto mensagem
+                var messageObject = {
+                    author: author,
+                    message: message,
+                    time: timeNow,
+                };
+                // Assim que a mensagem é enviada, ela tambem é renderizada
+                renderMessage(messageObject);
+                // Envia a mensagem para o servidor (server.js)
+                socket.emit('sendMessage', messageObject);
+            }
+        });
+        
+        // Faz o modal aparecer assim que pagina estiver carregada
+        $(document).ready(function() {
+            $('#modal').modal('show');
+            // Ao clicar no botao Salvar do modal, ele é fechado logo em seguida
+            $('#save-username').click(function() {
+                // Podia adicionar uma validacao aqui, tipo se o nome tiver vazio exibir um alert "Por favor digite seu usuario"
+                $('#modal').modal('hide');
+            });
+        });
+    </script>
+    <!-- /* End */ Scripts utilizados -->
+</body>
+</html>
