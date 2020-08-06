@@ -11,6 +11,11 @@
 - Uma vez na pasta do projeto, digite o comando:
 
 ```bash
+npm install
+```
+- Logo após:
+
+```bash
 node server.js
 ```
 
